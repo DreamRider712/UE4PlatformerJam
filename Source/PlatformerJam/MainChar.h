@@ -19,12 +19,27 @@ public:
 	AMainChar();
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Animations)
-	class UPaperFlipBook* IdleAnimation;
+	class UPaperFlipbook* IdleAnimation;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Animations)
+	class UPaperFlipbook* RunAnimation;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Animations)
+	class UPaperFlipbook* JumpAnimation;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Camera")
 	class USpringArmComponent* SpringArm;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Camera")
 	class UCameraComponent* CameraComponent;
+
+	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
+	virtual void Tick(float DeltaSeconds) override;
+
+	void MoveRight(float value);
+
+	void UpdateAnimation();
+
+	void UpdateCharacter();
 
 };
