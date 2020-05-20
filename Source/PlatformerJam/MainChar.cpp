@@ -9,6 +9,8 @@
 #include "GameFramework/Actor.h"
 #include "Camera/CameraComponent.h"
 #include "Components/InputComponent.h"
+#include "Components/BoxComponent.h"
+#include "TimerManager.h"
 
 AMainChar::AMainChar(){
 	// Make sure to only use Yaw from controller and ignore rest of rotation
@@ -33,6 +35,17 @@ AMainChar::AMainChar(){
 
 	GetCharacterMovement()->bConstrainToPlane = true;
 	GetCharacterMovement()->SetPlaneConstraintNormal(FVector(0.f, -1.f, 0.f));
+
+	AttackBox = CreateDefaultSubobject<UBoxComponent>(TEXT("AttackBox"));
+	AttackBox->SetupAttachment(GetSprite());
+	AttackBox->bIsActive = false;
+
+	bIsAttacking = false;
+	LastAttackAnimation = AttackAnimation_2;
+}
+
+void AMainChar::BeginPlay() {
+	Super::BeginPlay();
 }
 
 void AMainChar::Tick(float DeltaSeconds) {
@@ -46,11 +59,14 @@ void AMainChar::SetupPlayerInputComponent(class UInputComponent* PlayerInputComp
 
 	PlayerInputComponent->BindAction("Jump", IE_Pressed, this, &ACharacter::Jump);
 	PlayerInputComponent->BindAction("Jump", IE_Released, this, &ACharacter::StopJumping);
+	PlayerInputComponent->BindAction("Attack", IE_Pressed, this, &AMainChar::Attack);
+	//PlayerInputComponent->BindAction("Attack", IE_Released, this, &AMainChar::Attack);
 }
 
 void AMainChar::MoveRight(float value) {
-	AddMovementInput(FVector(1.f, 0.f, 0.f), value);
-	
+	if (!bIsAttacking) {
+		AddMovementInput(FVector(1.f, 0.f, 0.f), value);
+	}
 }
 
 void AMainChar::UpdateCharacter() {
@@ -73,18 +89,40 @@ void AMainChar::UpdateCharacter() {
 }
 
 void AMainChar::UpdateAnimation() {
-	bool bIsGrounded = GetMovementComponent()->IsFalling();
+	bool bIsFalling = GetMovementComponent()->IsFalling();
 	const FVector PlayerVelocity = GetVelocity();
 	const float PlayerSpeedSqr = PlayerVelocity.SizeSquared();
 
-	if (!bIsGrounded) {
-		UPaperFlipbook* DesiredAnimation = (PlayerSpeedSqr > 0.f) ? RunAnimation : IdleAnimation;
-		if (GetSprite()->GetFlipbook() != DesiredAnimation) {
-			GetSprite()->SetFlipbook(DesiredAnimation);
+	if (!bIsFalling) {
+		if (!bIsAttacking) {
+			UPaperFlipbook* DesiredAnimation = (PlayerSpeedSqr > 0.f) ? RunAnimation : IdleAnimation;
+			if (GetSprite()->GetFlipbook() != DesiredAnimation) {
+				GetSprite()->SetFlipbook(DesiredAnimation);
+			}
+		}
+		else {
+			GetSprite()->SetFlipbook(LastAttackAnimation);
 		}
 	}
 	else {
 		if (GetSprite()->GetFlipbook() != JumpAnimation)
 			GetSprite()->SetFlipbook(JumpAnimation);
 	}
+}
+
+void AMainChar::Attack() {
+	bool bIsFalling = GetMovementComponent()->IsFalling();
+	if (!bIsFalling) {
+		if (!bIsAttacking) {
+			LastAttackAnimation = LastAttackAnimation == AttackAnimation_1 ? AttackAnimation_2 : AttackAnimation_1;
+			bIsAttacking = true;
+			AttackBox->bIsActive = true;
+			GetWorldTimerManager().SetTimer(timerHandle, this, &AMainChar::EndAttack, .36f);
+		}
+	}
+}
+
+void AMainChar::EndAttack() {
+	bIsAttacking = false;
+	AttackBox->bIsActive = false;
 }
