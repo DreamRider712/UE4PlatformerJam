@@ -43,7 +43,10 @@ public:
 	bool bIsAttacking;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Combat")
-	class UBoxComponent* AttackBox;
+	class UBoxComponent* LowAttackBox;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Combat")
+	class UBoxComponent* HighAttackBox;
 
 	FTimerHandle timerHandle;
 
@@ -52,7 +55,6 @@ public:
 
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
 	virtual void Tick(float DeltaSeconds) override;
-	virtual void BeginPlay() override;
 
 	void MoveRight(float value);
 	void Attack();
@@ -61,5 +63,17 @@ public:
 	void UpdateAnimation();
 
 	void UpdateCharacter();
+
+	void ActivateCollision(UBoxComponent* Comp);
+	void DeactivateCollision(UBoxComponent* Comp);
+
+	UFUNCTION()
+	void CombatOverlapBegin(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult);
+	
+	UFUNCTION()
+	void CombatOverlapEnd(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex);
+
+protected:
+	virtual void BeginPlay() override;
 
 };

@@ -6,8 +6,8 @@
 #include "Components/CapsuleComponent.h"
 
 AEnemy_Goblin::AEnemy_Goblin() {
-	SetHealth(20.f);
-	SetMaxHealth(20.f);
+	SetHealth(40.f);
+	SetMaxHealth(40.f);
 	SetDamage(10.f);
 	CurrentStatus = EEnemyStatus::ES_Idle;
 
@@ -46,8 +46,8 @@ void AEnemy_Goblin::CheckStatus(EEnemyStatus Status) {
 }
 
 void AEnemy_Goblin::OnOverlapBegin(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult){
-	UE_LOG(LogTemp, Warning, TEXT("TESTING OVERLAP BEGIN WITH OTHER ACTORS"));
-
+	Super::OnOverlapBegin(OverlappedComponent, OtherActor, OtherComp, OtherBodyIndex, bFromSweep, SweepResult);
+	UE_LOG(LogTemp, Warning, TEXT("DAMAGING ENEMY :: GOBLIN"));
 }
 
 void AEnemy_Goblin::OnOverlapEnd(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex){

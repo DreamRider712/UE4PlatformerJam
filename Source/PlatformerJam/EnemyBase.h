@@ -75,12 +75,16 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, category = Animations)
 	float Damage;
 
+	void ResetAnimation();
+
 	//Items related to enemy status enum
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Gameplay")
 	EEnemyStatus CurrentStatus;
 
 	UFUNCTION(BlueprintCallable, Category = "Gameplay")
 	void ChangeStatus(EEnemyStatus Status);
+
+	void ReceiveDamage(float value);
 
 	UFUNCTION()
 	virtual void OnOverlapBegin(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult);

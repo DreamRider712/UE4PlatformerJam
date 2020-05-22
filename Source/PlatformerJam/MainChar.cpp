@@ -11,6 +11,8 @@
 #include "Components/InputComponent.h"
 #include "Components/BoxComponent.h"
 #include "TimerManager.h"
+#include "EnemyBase.h"
+#include "Classes/Kismet/GameplayStatics.h"
 
 AMainChar::AMainChar(){
 	// Make sure to only use Yaw from controller and ignore rest of rotation
@@ -36,9 +38,22 @@ AMainChar::AMainChar(){
 	GetCharacterMovement()->bConstrainToPlane = true;
 	GetCharacterMovement()->SetPlaneConstraintNormal(FVector(0.f, -1.f, 0.f));
 
-	AttackBox = CreateDefaultSubobject<UBoxComponent>(TEXT("AttackBox"));
-	AttackBox->SetupAttachment(GetSprite());
-	AttackBox->bIsActive = false;
+	LowAttackBox = CreateDefaultSubobject<UBoxComponent>(TEXT("LowAttackBox"));
+	LowAttackBox->SetupAttachment(GetSprite());
+
+	LowAttackBox->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	LowAttackBox->SetCollisionObjectType(ECollisionChannel::ECC_WorldDynamic);
+	LowAttackBox->SetCollisionResponseToAllChannels(ECollisionResponse::ECR_Ignore);
+	LowAttackBox->SetCollisionResponseToChannel(ECollisionChannel::ECC_Pawn, ECollisionResponse::ECR_Overlap);
+
+	HighAttackBox = CreateDefaultSubobject<UBoxComponent>(TEXT("HighAttackBox"));
+	HighAttackBox->SetupAttachment(GetSprite());
+
+	HighAttackBox->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	HighAttackBox->SetCollisionObjectType(ECollisionChannel::ECC_WorldDynamic);
+	HighAttackBox->SetCollisionResponseToAllChannels(ECollisionResponse::ECR_Ignore);
+	HighAttackBox->SetCollisionResponseToChannel(ECollisionChannel::ECC_Pawn, ECollisionResponse::ECR_Overlap);
+
 
 	bIsAttacking = false;
 	LastAttackAnimation = AttackAnimation_2;
@@ -46,6 +61,11 @@ AMainChar::AMainChar(){
 
 void AMainChar::BeginPlay() {
 	Super::BeginPlay();
+
+	LowAttackBox->OnComponentBeginOverlap.AddDynamic(this, &AMainChar::CombatOverlapBegin);
+	LowAttackBox->OnComponentEndOverlap.AddDynamic(this, &AMainChar::CombatOverlapEnd);
+	HighAttackBox->OnComponentBeginOverlap.AddDynamic(this, &AMainChar::CombatOverlapBegin);
+	HighAttackBox->OnComponentEndOverlap.AddDynamic(this, &AMainChar::CombatOverlapEnd);
 }
 
 void AMainChar::Tick(float DeltaSeconds) {
@@ -115,14 +135,40 @@ void AMainChar::Attack() {
 	if (!bIsFalling) {
 		if (!bIsAttacking) {
 			LastAttackAnimation = LastAttackAnimation == AttackAnimation_1 ? AttackAnimation_2 : AttackAnimation_1;
-			bIsAttacking = true;
-			AttackBox->bIsActive = true;
+			bIsAttacking = true; 
+			if (LastAttackAnimation == AttackAnimation_1)
+				ActivateCollision(LowAttackBox);
+			else
+				ActivateCollision(HighAttackBox);
 			GetWorldTimerManager().SetTimer(timerHandle, this, &AMainChar::EndAttack, .36f);
-		}
+		}																																																																																																																			
 	}
 }
 
 void AMainChar::EndAttack() {
 	bIsAttacking = false;
-	AttackBox->bIsActive = false;
+	if (LastAttackAnimation == AttackAnimation_1)
+		DeactivateCollision(LowAttackBox);
+	else
+		DeactivateCollision(HighAttackBox);
+}
+
+void AMainChar::ActivateCollision(UBoxComponent* Comp) {
+	Comp->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
+}
+
+void AMainChar::DeactivateCollision(UBoxComponent* Comp) {
+	Comp->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+}
+
+void AMainChar::CombatOverlapBegin(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult){
+	if (OtherActor) {
+		AEnemyBase* Enemy = Cast<AEnemyBase>(OtherActor);
+		if (Enemy) {
+			Enemy->ReceiveDamage(10.f);
+		}
+	}
+}
+
+void AMainChar::CombatOverlapEnd(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex){
 }
