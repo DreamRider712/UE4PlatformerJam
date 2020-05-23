@@ -33,6 +33,9 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Animations)
 	class UPaperFlipbook* AttackAnimation_2;
 
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Animations)
+	class UPaperFlipbook* DeathAnimation;
+
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Camera")
 	class USpringArmComponent* SpringArm;
 
@@ -48,6 +51,14 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Combat")
 	class UBoxComponent* HighAttackBox;
 
+	float Health;
+	float MaxHealth;
+	float Stamina;
+	float MaxStamina;
+	float Damage;
+
+	bool bIsAlive;
+
 	FTimerHandle timerHandle;
 
 	//To keep track of which animation was used
@@ -57,12 +68,14 @@ public:
 	virtual void Tick(float DeltaSeconds) override;
 
 	void MoveRight(float value);
+	void UpdateAnimation();
+	void UpdateCharacter();
+
+	//Functions used for combat
 	void Attack();
 	void EndAttack();
-
-	void UpdateAnimation();
-
-	void UpdateCharacter();
+	void ReceiveDamage(float value);
+	void Death();
 
 	void ActivateCollision(UBoxComponent* Comp);
 	void DeactivateCollision(UBoxComponent* Comp);

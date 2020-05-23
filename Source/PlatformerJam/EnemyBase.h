@@ -43,6 +43,15 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, category = Animations)
 	class UPaperFlipbook* DeathAnimation;
 
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, category = "Combat")
+	class UBoxComponent* CombatBox;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, category = AI)
+	class USphereComponent* SensorSphere;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, category = AI)
+	class USphereComponent* CloseRangeSphere;
+
 	//Functions for gameplay (Attack, damage, death, patrol)
 	UFUNCTION(BlueprintCallable, Category = "Gameplay")
 	virtual void Attack();
@@ -50,11 +59,13 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Gameplay")
 	virtual void Patrol();
 
-	//UFUNCTION(BlueprintCallable, Category = "Gameplay")
-	//virtual void TakeDamage();
-
 	UFUNCTION(BlueprintCallable, Category = "Gameplay")
 	virtual void Death();
+
+	void ActivateCollision();
+	void DeactivateCollision();
+
+	void StartAI();
 	
 	//SETTERS-GETTERS
 	FORCEINLINE void SetHealth(float value) { Health = value; }
@@ -86,9 +97,22 @@ public:
 
 	void ReceiveDamage(float value);
 
+	virtual void Tick(float DeltaSeconds) override;
+
+	void DestroyMe();
+
 	UFUNCTION()
 	virtual void OnOverlapBegin(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult);
 
 	UFUNCTION()
 	virtual void OnOverlapEnd(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex);
+
+	UFUNCTION()
+	void CombatOverlapBegin(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult);
+
+	UFUNCTION()
+	void CombatOverlapEnd(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex);
+
+protected:
+	virtual void BeginPlay() override;
 };

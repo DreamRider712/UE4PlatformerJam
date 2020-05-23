@@ -57,6 +57,7 @@ AMainChar::AMainChar(){
 
 	bIsAttacking = false;
 	LastAttackAnimation = AttackAnimation_2;
+	bIsAlive = true;
 }
 
 void AMainChar::BeginPlay() {
@@ -151,6 +152,25 @@ void AMainChar::EndAttack() {
 		DeactivateCollision(LowAttackBox);
 	else
 		DeactivateCollision(HighAttackBox);
+}
+
+void AMainChar::ReceiveDamage(float value) {
+	if (Health - value <= 0) {
+		Health -= value;
+		Death();
+	}else {
+		Health -= value;
+	}
+}
+
+void AMainChar::Death() {
+	if (DeathAnimation) {
+		GetSprite()->SetLooping(false);
+		GetSprite()->SetFlipbook(DeathAnimation);
+
+		bCanBeDamaged = false;
+		bIsAlive = false;
+	}
 }
 
 void AMainChar::ActivateCollision(UBoxComponent* Comp) {
