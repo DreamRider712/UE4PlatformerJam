@@ -53,15 +53,28 @@ public:
 	class USphereComponent* CloseRangeSphere;
 
 
+
 	//Functions for gameplay (Attack, damage, death, patrol)
 	UFUNCTION(BlueprintCallable, Category = "Gameplay")
 	virtual void Attack();
+	
+	UFUNCTION(BlueprintCallable, Category = "Gameplay")
+	virtual void DealDamage();
+
+	UFUNCTION(BlueprintCallable, Category = "Gameplay")
+	virtual void EndAttack();
 
 	UFUNCTION(BlueprintCallable, Category = "Gameplay")
 	virtual void Patrol();
 
 	UFUNCTION(BlueprintCallable, Category = "Gameplay")
 	virtual void Death();
+
+	FTimerHandle resetTimerHandle;
+	FTimerHandle damageTimerHandle;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Combat")
+	TSubclassOf<UDamageType> DamageTypeClass;
 
 	void ActivateCollision();
 	void DeactivateCollision();
@@ -77,6 +90,8 @@ public:
 	FORCEINLINE float GetMaxHealth() { return MaxHealth; }
 	FORCEINLINE float GetDamage() { return Damage; }
 
+	FORCEINLINE void ChangeStatus(EEnemyStatus Status) { CurrentStatus = Status; }
+
 	//Basic Variables; Set as private, should be used only through child class through setters-getters
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, category = Animations)
 	float Health;
@@ -86,6 +101,8 @@ public:
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, category = Animations)
 	float Damage;
+
+	float Speed;
 
 	void ResetAnimation();
 
@@ -98,14 +115,13 @@ public:
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Gameplay")
 	EEnemyStatus CurrentStatus;
 
-	UFUNCTION(BlueprintCallable, Category = "Gameplay")
-	void ChangeStatus(EEnemyStatus Status);
-
 	void ReceiveDamage(float value);
 
 	virtual void Tick(float DeltaSeconds) override;
 
 	void DestroyMe();
+
+	void ChaseEnemy(FVector TargetPosition);
 
 	UFUNCTION()
 	virtual void OnOverlapBegin(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult);

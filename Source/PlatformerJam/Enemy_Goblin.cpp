@@ -6,9 +6,9 @@
 #include "Components/CapsuleComponent.h"
 
 AEnemy_Goblin::AEnemy_Goblin() {
-	SetHealth(40.f);
-	SetMaxHealth(40.f);
-	SetDamage(10.f);
+	SetHealth(60.f);
+	SetMaxHealth(60.f);
+	SetDamage(30.f);
 	CurrentStatus = EEnemyStatus::ES_Idle;
 
 }

@@ -51,13 +51,23 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Combat")
 	class UBoxComponent* HighAttackBox;
 
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Player Stats")
 	float Health;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Player Stats")
 	float MaxHealth;
+
 	float Stamina;
 	float MaxStamina;
 	float Damage;
 
 	bool bIsAlive;
+
+	FORCEINLINE void SetHealth(float value) { Health = value; }
+	FORCEINLINE void SetMaxHealth(float value) { MaxHealth = value; }
+
+	FORCEINLINE float GetHealth() { return Health; }
+	FORCEINLINE float GetMaxHealth() { return MaxHealth; }
 
 	FTimerHandle timerHandle;
 
@@ -79,6 +89,8 @@ public:
 
 	void ActivateCollision(UBoxComponent* Comp);
 	void DeactivateCollision(UBoxComponent* Comp);
+
+	virtual void Jump() override;
 
 	UFUNCTION()
 	void CombatOverlapBegin(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult);

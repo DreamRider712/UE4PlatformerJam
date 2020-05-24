@@ -58,6 +58,9 @@ AMainChar::AMainChar(){
 	bIsAttacking = false;
 	LastAttackAnimation = AttackAnimation_2;
 	bIsAlive = true;
+
+	Health = 200.f;
+	MaxHealth = 200.f;
 }
 
 void AMainChar::BeginPlay() {
@@ -71,21 +74,29 @@ void AMainChar::BeginPlay() {
 
 void AMainChar::Tick(float DeltaSeconds) {
 	Super::Tick(DeltaSeconds);
+	if (bIsAlive) {
+		UpdateCharacter();
+	}
+	
+}
 
-	UpdateCharacter();
+void AMainChar::Jump() {
+	if (bIsAlive) {
+		Super::Jump();
+	}
 }
 
 void AMainChar::SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) {
 	PlayerInputComponent->BindAxis("MoveRight", this, &AMainChar::MoveRight);
 
-	PlayerInputComponent->BindAction("Jump", IE_Pressed, this, &ACharacter::Jump);
+	PlayerInputComponent->BindAction("Jump", IE_Pressed, this, &AMainChar::Jump);
 	PlayerInputComponent->BindAction("Jump", IE_Released, this, &ACharacter::StopJumping);
 	PlayerInputComponent->BindAction("Attack", IE_Pressed, this, &AMainChar::Attack);
 	//PlayerInputComponent->BindAction("Attack", IE_Released, this, &AMainChar::Attack);
 }
 
 void AMainChar::MoveRight(float value) {
-	if (!bIsAttacking) {
+	if (!bIsAttacking && bIsAlive) {
 		AddMovementInput(FVector(1.f, 0.f, 0.f), value);
 	}
 }
@@ -165,8 +176,9 @@ void AMainChar::ReceiveDamage(float value) {
 
 void AMainChar::Death() {
 	if (DeathAnimation) {
-		GetSprite()->SetLooping(false);
+		UE_LOG(LogTemp, Warning, TEXT("I DIED"));
 		GetSprite()->SetFlipbook(DeathAnimation);
+		GetSprite()->SetLooping(false);
 
 		bCanBeDamaged = false;
 		bIsAlive = false;
