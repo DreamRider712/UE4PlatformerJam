@@ -9,7 +9,7 @@
 #include "MainChar.h"
 #include "TimerManager.h"
 #include "ConstructorHelpers.h"
-#include "DrawDebugHelpers.h"
+#include "GameFramework/Controller.h"
 
 
 
@@ -24,24 +24,38 @@ AEnemyBase::AEnemyBase() {
 	CombatBox->SetCollisionResponseToChannel(ECollisionChannel::ECC_Pawn, ECollisionResponse::ECR_Overlap);
 
 	SensorSphere = CreateDefaultSubobject<USphereComponent>(TEXT("SensorSphere"));
+	SensorSphere->SetupAttachment(GetRootComponent());
+	
 	CloseRangeSphere = CreateDefaultSubobject<USphereComponent>(TEXT("CloseRangeSphere"));
+	CloseRangeSphere->SetupAttachment(GetRootComponent());
 
+	bIsAlive = true;
 }
 
 void AEnemyBase::BeginPlay() {
 	Super::BeginPlay();
 	CombatBox->OnComponentBeginOverlap.AddDynamic(this, &AEnemyBase::CombatOverlapBegin);
 	CombatBox->OnComponentEndOverlap.AddDynamic(this, &AEnemyBase::CombatOverlapEnd);
+
+	SensorSphere->OnComponentBeginOverlap.AddDynamic(this, &AEnemyBase::SensorOverlapBegin);
+	SensorSphere->OnComponentEndOverlap.AddDynamic(this, &AEnemyBase::SensorOverlapEnd);
+
+	CloseRangeSphere->OnComponentBeginOverlap.AddDynamic(this, &AEnemyBase::CloseOverlapBegin);
+	CloseRangeSphere->OnComponentEndOverlap.AddDynamic(this, &AEnemyBase::CloseOverlapEnd);
+
+	InitialLocation = GetActorLocation();
+	MoveToLocation = InitialLocation - FVector(120.f, 0.f, 0.f);
 }
 
 void AEnemyBase::Tick(float DeltaSeconds) {
 	Super::Tick(DeltaSeconds);
-	StartAI();
+	if(bIsAlive)
+		StartAI();
 }
 
 //Function used as the AI of the enemy
 void AEnemyBase::StartAI() {
-
+	Patrol();
 }
 
 void AEnemyBase::Attack(){
@@ -57,6 +71,7 @@ void AEnemyBase::Death(){
 		GetSprite()->SetFlipbook(DeathAnimation);
 		FTimerHandle TimerHandle;
 		GetWorldTimerManager().SetTimer(TimerHandle, this, &AEnemyBase::DestroyMe, 2.f);
+		bIsAlive = false;
 	}
 }
 
@@ -64,7 +79,22 @@ void AEnemyBase::DestroyMe() {
 	Destroy();
 }
 
-void AEnemyBase::Patrol(){
+void AEnemyBase::Patrol() {
+	FVector ForwardVector = GetActorForwardVector();
+	FVector CurrentLocation = GetActorLocation();
+	if ((ForwardVector.X < 0) && CurrentLocation.X >= MoveToLocation.X && bCanBeDamaged || (ForwardVector.X > 0) && (CurrentLocation.X <= MoveToLocation.X && bCanBeDamaged)){
+		GetSprite()->SetFlipbook(WalkAnimation);
+		AddMovementInput(ForwardVector, 0.1f);
+	}
+	else {
+		FVector Temp = MoveToLocation;
+		MoveToLocation = InitialLocation;
+		InitialLocation = Temp;
+		if (ForwardVector.X < 0)
+			SetActorRotation(FRotator(0.f, 0.f, 0.f));
+		if (ForwardVector.X > 0)
+			SetActorRotation(FRotator(0.f, 180.f, 0.f));
+	}
 }
 
 void AEnemyBase::ChangeStatus(EEnemyStatus Status){
@@ -103,13 +133,38 @@ void AEnemyBase::OnOverlapEnd(UPrimitiveComponent* OverlappedComponent, AActor* 
 void AEnemyBase::CombatOverlapBegin(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult){
 	if (OtherActor) {
 		AMainChar* MainChar = Cast<AMainChar>(OtherActor);
-		if (OtherActor) {
-			//TODO: Add logic to damage player
+		if (MainChar) {
+			UE_LOG(LogTemp, Warning, TEXT("I'M ABOUT TO REKT PLAYER"));
 		}
 	}
 }
 
 void AEnemyBase::CombatOverlapEnd(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex){
+}
+
+void AEnemyBase::SensorOverlapBegin(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult){
+	if (OtherActor) {
+		UE_LOG(LogTemp, Warning, TEXT("DETECTED OTHERACTOR"));
+		AMainChar* MainChar = Cast<AMainChar>(OtherActor);
+		if (MainChar) {
+			UE_LOG(LogTemp, Warning, TEXT("DETECTED PLAYER"));
+		}
+	}
+}
+
+void AEnemyBase::SensorOverlapEnd(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex){
+}
+
+void AEnemyBase::CloseOverlapBegin(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult){
+	if (OtherActor) {
+		AMainChar* MainChar = Cast<AMainChar>(OtherActor);
+		if (MainChar) {
+			UE_LOG(LogTemp, Warning, TEXT("I'M ABOUT TO REKT PLAYER"));
+		}
+	}
+}
+
+void AEnemyBase::CloseOverlapEnd(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex){
 }
 
 void AEnemyBase::ActivateCollision() {

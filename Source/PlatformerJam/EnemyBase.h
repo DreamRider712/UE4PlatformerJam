@@ -28,29 +28,30 @@ public:
 	AEnemyBase();
 
 	//For Animations
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, category = Animations)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Animations)
 	class UPaperFlipbook* IdleAnimation;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, category = Animations)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Animations)
 	class UPaperFlipbook* WalkAnimation;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, category = Animations)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Animations)
 	class UPaperFlipbook* AttackAnimation;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, category = Animations)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Animations)
 	class UPaperFlipbook* HurtAnimation;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, category = Animations)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Animations)
 	class UPaperFlipbook* DeathAnimation;
 
-	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, category = "Combat")
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Combat")
 	class UBoxComponent* CombatBox;
 
-	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, category = AI)
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "AI")
 	class USphereComponent* SensorSphere;
 
-	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, category = AI)
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "AI")
 	class USphereComponent* CloseRangeSphere;
+
 
 	//Functions for gameplay (Attack, damage, death, patrol)
 	UFUNCTION(BlueprintCallable, Category = "Gameplay")
@@ -88,6 +89,11 @@ public:
 
 	void ResetAnimation();
 
+	FVector InitialLocation;
+	FVector MoveToLocation;
+
+	bool bIsAlive;
+
 	//Items related to enemy status enum
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Gameplay")
 	EEnemyStatus CurrentStatus;
@@ -112,6 +118,18 @@ public:
 
 	UFUNCTION()
 	void CombatOverlapEnd(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex);
+
+	UFUNCTION()
+	void SensorOverlapBegin(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult);
+
+	UFUNCTION()
+	void SensorOverlapEnd(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex);
+
+	UFUNCTION()
+	void CloseOverlapBegin(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult);
+
+	UFUNCTION()
+	void CloseOverlapEnd(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex);
 
 protected:
 	virtual void BeginPlay() override;
