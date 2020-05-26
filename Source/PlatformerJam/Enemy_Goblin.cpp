@@ -6,9 +6,6 @@
 #include "Components/CapsuleComponent.h"
 
 AEnemy_Goblin::AEnemy_Goblin() {
-	SetHealth(60.f);
-	SetMaxHealth(60.f);
-	SetDamage(30.f);
 	CurrentStatus = EEnemyStatus::ES_Idle;
 
 }
@@ -17,16 +14,17 @@ void AEnemy_Goblin::BeginPlay() {
 	Super::BeginPlay();
 
 	ChangeStatus(CurrentStatus);
+	UE_LOG(LogTemp, Warning, TEXT("INIAIL Health: %f"), Health);
 }
 
 void AEnemy_Goblin::Tick(float DeltaSeconds) {
 	Super::Tick(DeltaSeconds);
 
-	ChangeStatus(CurrentStatus);
+	//ChangeStatus(CurrentStatus);
 }
 
 void AEnemy_Goblin::CheckStatus(EEnemyStatus Status) {
-	switch (Status)
+	/*switch (Status)
 	{
 	case EEnemyStatus::ES_Idle:
 		GetSprite()->SetFlipbook(IdleAnimation);
@@ -42,12 +40,11 @@ void AEnemy_Goblin::CheckStatus(EEnemyStatus Status) {
 		break;
 	default:
 		break;
-	}
+	}*/
 }
 
 void AEnemy_Goblin::OnOverlapBegin(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult){
 	Super::OnOverlapBegin(OverlappedComponent, OtherActor, OtherComp, OtherBodyIndex, bFromSweep, SweepResult);
-	UE_LOG(LogTemp, Warning, TEXT("DAMAGING ENEMY :: GOBLIN"));
 }
 
 void AEnemy_Goblin::OnOverlapEnd(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex){

@@ -31,6 +31,9 @@ AEnemyBase::AEnemyBase() {
 	CloseRangeSphere->SetupAttachment(GetRootComponent());
 
 	bIsAlive = true;
+	bOverlappingCombatSphere = false;
+	bIsAttacking = false;
+
 }
 
 void AEnemyBase::BeginPlay() {
@@ -77,23 +80,30 @@ void AEnemyBase::StartAI() {
 			break;
 		}
 	}
+
+	if (!bOverlappingCombatSphere && !bIsAttacking)
+		ChangeStatus(EEnemyStatus::ES_Patrol);
 }
 
 void AEnemyBase::Attack(){
 	if (bCanBeDamaged) {
+		//ActivateCollision();
 		GetSprite()->SetFlipbook(AttackAnimation);
+		FTimerHandle activateDmgColTimer;
+		GetWorldTimerManager().SetTimer(activateDmgColTimer, this, &AEnemyBase::ActivateCollision, .3f);
 	}
 }
 
 void AEnemyBase::DealDamage() {
+	UE_LOG(LogTemp, Warning, TEXT("DealDamage"));
 	if (bCanBeDamaged) {
-		ActivateCollision();
-		GetWorldTimerManager().SetTimer(damageTimerHandle, this, &AEnemyBase::EndAttack, .16f);
+		GetWorldTimerManager().SetTimer(damageTimerHandle, this, &AEnemyBase::EndAttack, .1f);
 	}
 }
 
 void AEnemyBase::EndAttack() {
 	DeactivateCollision();
+	bIsAttacking = false;
 }
 
 void AEnemyBase::Death(){
@@ -128,7 +138,6 @@ void AEnemyBase::Patrol() {
 			SetActorRotation(FRotator(0.f, 180.f, 0.f));
 	}
 }
-
 
 void AEnemyBase::ResetAnimation() {
 	GetSprite()->SetFlipbook(IdleAnimation);
@@ -175,16 +184,16 @@ void AEnemyBase::CombatOverlapBegin(UPrimitiveComponent* OverlappedComponent, AA
 	if (OtherActor) {
 		AMainChar* MainChar = Cast<AMainChar>(OtherActor);
 		if (MainChar) {
-			if(bCanBeDamaged)
+			if (bCanBeDamaged) {
+				bIsAttacking = true;
 				MainChar->ReceiveDamage(Damage);
-				//GetWorldTimerManager().SetTimer(damageTimerHandle, this, &AEnemyBase::EndAttack, .16f);
+			}		
 		}
 	}
 }
 
 void AEnemyBase::CombatOverlapEnd(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex){
-	//GetWorldTimerManager().SetTimer(damageTimerHandle, this, &AEnemyBase::EndAttack, .16f);
-	ChangeStatus(EEnemyStatus::ES_Patrol);
+	GetWorldTimerManager().SetTimer(damageTimerHandle, this, &AEnemyBase::EndAttack, 1.f);
 }
 
 void AEnemyBase::SensorOverlapBegin(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult){
@@ -205,16 +214,17 @@ void AEnemyBase::CloseOverlapBegin(UPrimitiveComponent* OverlappedComponent, AAc
 	if (OtherActor) {
 		AMainChar* MainChar = Cast<AMainChar>(OtherActor);
 		if (MainChar) {
+			bOverlappingCombatSphere = true;
 			FVector MainCharPosition = MainChar->GetActorLocation();
-			//ChaseEnemy(MainCharPosition);
+			ChaseEnemy(MainCharPosition);
 			ChangeStatus(EEnemyStatus::ES_Combat);
-			GetWorldTimerManager().SetTimer(resetTimerHandle, this, &AEnemyBase::DealDamage, .2f);
+			GetWorldTimerManager().SetTimer(resetTimerHandle, this, &AEnemyBase::DealDamage, 1.2f);
 		}
 	}
 }
 
 void AEnemyBase::CloseOverlapEnd(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex){
-	//ChangeStatus(EEnemyStatus::ES_Patrol);
+	bOverlappingCombatSphere = false;
 	Speed = 0.1f;
 }
 

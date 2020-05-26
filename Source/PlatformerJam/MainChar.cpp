@@ -56,6 +56,7 @@ AMainChar::AMainChar(){
 
 
 	bIsAttacking = false;
+	bCanBeDamaged = true;
 	LastAttackAnimation = AttackAnimation_2;
 	bIsAlive = true;
 
@@ -96,7 +97,7 @@ void AMainChar::SetupPlayerInputComponent(class UInputComponent* PlayerInputComp
 }
 
 void AMainChar::MoveRight(float value) {
-	if (!bIsAttacking && bIsAlive) {
+	if (!bIsAttacking && bIsAlive && bCanBeDamaged) {
 		AddMovementInput(FVector(1.f, 0.f, 0.f), value);
 	}
 }
@@ -127,9 +128,11 @@ void AMainChar::UpdateAnimation() {
 
 	if (!bIsFalling) {
 		if (!bIsAttacking) {
-			UPaperFlipbook* DesiredAnimation = (PlayerSpeedSqr > 0.f) ? RunAnimation : IdleAnimation;
-			if (GetSprite()->GetFlipbook() != DesiredAnimation) {
-				GetSprite()->SetFlipbook(DesiredAnimation);
+			if (bCanBeDamaged) {
+				UPaperFlipbook* DesiredAnimation = (PlayerSpeedSqr > 0.f) ? RunAnimation : IdleAnimation;
+				if (GetSprite()->GetFlipbook() != DesiredAnimation) {
+					GetSprite()->SetFlipbook(DesiredAnimation);
+				}
 			}
 		}
 		else {
@@ -166,12 +169,23 @@ void AMainChar::EndAttack() {
 }
 
 void AMainChar::ReceiveDamage(float value) {
-	if (Health - value <= 0) {
-		Health -= value;
-		Death();
-	}else {
-		Health -= value;
+	if (bCanBeDamaged) {
+		bCanBeDamaged = false;
+		GetSprite()->SetFlipbook(HurtAnimation);
+		if (Health - value <= 0) {
+			Health -= value;
+			Death();
+		}
+		else {
+			FTimerHandle TimerHandle;
+			Health -= value;
+			GetWorldTimerManager().SetTimer(TimerHandle, this, &AMainChar::ResetDamage, 0.4f);
+		}
 	}
+}
+
+void AMainChar::ResetDamage() {
+	bCanBeDamaged = true;
 }
 
 void AMainChar::Death() {

@@ -72,6 +72,7 @@ public:
 
 	FTimerHandle resetTimerHandle;
 	FTimerHandle damageTimerHandle;
+	FTimerHandle attackTimer;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Combat")
 	TSubclassOf<UDamageType> DamageTypeClass;
@@ -93,13 +94,13 @@ public:
 	FORCEINLINE void ChangeStatus(EEnemyStatus Status) { CurrentStatus = Status; }
 
 	//Basic Variables; Set as private, should be used only through child class through setters-getters
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, category = Animations)
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Combat")
 	float Health;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, category = Animations)
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Combat")
 	float MaxHealth;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, category = Animations)
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Combat")
 	float Damage;
 
 	float Speed;
@@ -110,6 +111,13 @@ public:
 	FVector MoveToLocation;
 
 	bool bIsAlive;
+	
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Mechanics")
+	bool bOverlappingCombatSphere;
+	
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Mechanics")
+	bool bIsAttacking;
+
 
 	//Items related to enemy status enum
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Gameplay")

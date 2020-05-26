@@ -32,6 +32,9 @@ public:
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Animations)
 	class UPaperFlipbook* AttackAnimation_2;
+	
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Animations)
+	class UPaperFlipbook* HurtAnimation;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Animations)
 	class UPaperFlipbook* DeathAnimation;
@@ -62,6 +65,7 @@ public:
 	float Damage;
 
 	bool bIsAlive;
+	bool bCanBeDamaged;
 
 	FORCEINLINE void SetHealth(float value) { Health = value; }
 	FORCEINLINE void SetMaxHealth(float value) { MaxHealth = value; }
@@ -80,6 +84,7 @@ public:
 	void MoveRight(float value);
 	void UpdateAnimation();
 	void UpdateCharacter();
+	void ResetDamage();
 
 	//Functions used for combat
 	void Attack();
