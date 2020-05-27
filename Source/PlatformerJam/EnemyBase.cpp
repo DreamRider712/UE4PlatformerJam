@@ -10,6 +10,7 @@
 #include "TimerManager.h"
 #include "ConstructorHelpers.h"
 #include "GameFramework/Controller.h"
+#include "Classes/AIController.h"
 
 
 
@@ -34,12 +35,18 @@ AEnemyBase::AEnemyBase() {
 	bOverlappingCombatSphere = false;
 	bIsAttacking = false;
 
+	CurrentStatus = EEnemyStatus::ES_Idle;
+
+	StartPoint = FVector(0.f);
+	TargetPoint = FVector(0.f);
+
+	Speed = 0.1f;
 }
 
 void AEnemyBase::BeginPlay() {
 	Super::BeginPlay();
-	Speed = 0.1f;
-	CurrentStatus = EEnemyStatus::ES_Patrol;
+	
+	AIController = Cast<AAIController>(GetController());
 	
 	CombatBox->OnComponentBeginOverlap.AddDynamic(this, &AEnemyBase::CombatOverlapBegin);
 	CombatBox->OnComponentEndOverlap.AddDynamic(this, &AEnemyBase::CombatOverlapEnd);
@@ -50,26 +57,53 @@ void AEnemyBase::BeginPlay() {
 	CloseRangeSphere->OnComponentBeginOverlap.AddDynamic(this, &AEnemyBase::CloseOverlapBegin);
 	CloseRangeSphere->OnComponentEndOverlap.AddDynamic(this, &AEnemyBase::CloseOverlapEnd);
 
-	InitialLocation = GetActorLocation();
+	StartPoint = GetActorLocation();
 	FVector ForwardVector = GetActorForwardVector();
-	if (ForwardVector.X<0)
-		MoveToLocation = InitialLocation - FVector(120.f, 0.f, 0.f);
-	if (ForwardVector.X>0)
-		MoveToLocation = InitialLocation + FVector(120.f, 0.f, 0.f);
+	TargetPoint += StartPoint;
 }
 
 void AEnemyBase::Tick(float DeltaSeconds) {
 	Super::Tick(DeltaSeconds);
 	if (bIsAlive) {
 		StartAI();
+		UpdateAnimation();
 	}
+}
+
+void AEnemyBase::UpdateAnimation() {
+	switch (CurrentStatus)
+	{
+	case EEnemyStatus::ES_Idle:
+		GetSprite()->SetFlipbook(IdleAnimation);
+		break;
+	case EEnemyStatus::ES_Patrol:
+		GetSprite()->SetFlipbook(WalkAnimation);
+		break;
+	case EEnemyStatus::ES_Combat:
+		break;
+	case EEnemyStatus::ES_Death:
+		break;
+	case EEnemyStatus::ES_MAX:
+		break;
+	default:
+		break;
+	}
+
 }
 
 //Function used as the AI of the enemy
 void AEnemyBase::StartAI() {
+	FTimerHandle waitHandle;
+	if (Speed == 0.f) {
+		ChangeStatus(EEnemyStatus::ES_Idle);
+	}
 	if (bCanBeDamaged) {
 		switch (CurrentStatus)
 		{
+		case EEnemyStatus::ES_Idle:
+			//We want enemy to start in wait for some seconds, then it can start patrolling
+			GetWorldTimerManager().SetTimer(waitHandle, this, &AEnemyBase::ActionWait, 2.f);
+			break;
 		case EEnemyStatus::ES_Patrol:
 			Patrol();
 			break;
@@ -81,29 +115,54 @@ void AEnemyBase::StartAI() {
 		}
 	}
 
-	if (!bOverlappingCombatSphere && !bIsAttacking)
-		ChangeStatus(EEnemyStatus::ES_Patrol);
+	//if (!bOverlappingCombatSphere && !bIsAttacking)
+	//	ChangeStatus(EEnemyStatus::ES_Patrol);
+}
+
+void AEnemyBase::ActionWait() {
+	UE_LOG(LogTemp, Warning, TEXT("ACTION WAIT CALLING; CHANGING BACK TO PATROL"));
+	ChangeStatus(EEnemyStatus::ES_Patrol);
+	Speed = 0.1f;
+}
+
+void AEnemyBase::Patrol() {
+	FVector CurrentLocation = GetActorLocation();
+	FVector ForwardVector = GetActorForwardVector();
+	FTimerHandle WaitHandle;
+	if (ForwardVector.X < 0.f && CurrentLocation.X > TargetPoint.X || ForwardVector.X > 0.f && CurrentLocation.X < TargetPoint.X) {
+		AddMovementInput(ForwardVector, Speed);
+		UE_LOG(LogTemp, Warning, TEXT("SHOULD CHANGE STATUS TO IDLE, forwardvector = %f"), ForwardVector.X);
+	}
+	else {
+		UE_LOG(LogTemp, Warning, TEXT("SHOULD CHANGE STATUS TO IDLE, forwardvector = %f"), ForwardVector.X);
+		FVector Temp = StartPoint;
+		StartPoint = TargetPoint;
+		TargetPoint = Temp;
+		Speed = 0.f;
+		GetWorldTimerManager().SetTimer(WaitHandle, this, &AEnemyBase::FlipEnemy, 2.f);
+	}
+}
+
+void AEnemyBase::FlipEnemy() {
+	FVector ForwardVector = GetActorForwardVector();
+	if (ForwardVector.X < 0.f) {
+		SetActorRotation(FRotator(0.f, 0.f, 0.f));
+	}
+	if (ForwardVector.X > 0.f) {
+		SetActorRotation(FRotator(0.f, 180.f, 0.f));
+	}
+}
+
+void AEnemyBase::ChaseEnemy(FVector TargetPosition) {
 }
 
 void AEnemyBase::Attack(){
-	if (bCanBeDamaged) {
-		//ActivateCollision();
-		GetSprite()->SetFlipbook(AttackAnimation);
-		FTimerHandle activateDmgColTimer;
-		GetWorldTimerManager().SetTimer(activateDmgColTimer, this, &AEnemyBase::ActivateCollision, .3f);
-	}
 }
 
 void AEnemyBase::DealDamage() {
-	UE_LOG(LogTemp, Warning, TEXT("DealDamage"));
-	if (bCanBeDamaged) {
-		GetWorldTimerManager().SetTimer(damageTimerHandle, this, &AEnemyBase::EndAttack, .1f);
-	}
 }
 
 void AEnemyBase::EndAttack() {
-	DeactivateCollision();
-	bIsAttacking = false;
 }
 
 void AEnemyBase::Death(){
@@ -119,24 +178,6 @@ void AEnemyBase::Death(){
 
 void AEnemyBase::DestroyMe() {
 	Destroy();
-}
-
-void AEnemyBase::Patrol() {
-	FVector ForwardVector = GetActorForwardVector();
-	FVector CurrentLocation = GetActorLocation();
-	if ((ForwardVector.X < 0) && CurrentLocation.X >= MoveToLocation.X && bCanBeDamaged || (ForwardVector.X > 0) && (CurrentLocation.X <= MoveToLocation.X && bCanBeDamaged)){
-		GetSprite()->SetFlipbook(WalkAnimation);
-		AddMovementInput(ForwardVector, Speed);
-	}
-	else {
-		FVector Temp = MoveToLocation;
-		MoveToLocation = InitialLocation;
-		InitialLocation = Temp;
-		if (ForwardVector.X < 0)
-			SetActorRotation(FRotator(0.f, 0.f, 0.f));
-		if (ForwardVector.X > 0)
-			SetActorRotation(FRotator(0.f, 180.f, 0.f));
-	}
 }
 
 void AEnemyBase::ResetAnimation() {
@@ -163,17 +204,6 @@ void AEnemyBase::ReceiveDamage(float value) {
 }
 
 
-void AEnemyBase::ChaseEnemy(FVector TargetPosition) {
-	MoveToLocation = TargetPosition;
-	Speed = .3f;
-	if (MoveToLocation.X > GetActorLocation().X) {
-		SetActorRotation(FRotator(0.f, 0.f, 0.f));
-	}
-	else {
-		SetActorRotation(FRotator(0.f, 180.f, 0.f));
-	}
-}
-
 void AEnemyBase::OnOverlapBegin(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult){
 }
 
@@ -181,51 +211,21 @@ void AEnemyBase::OnOverlapEnd(UPrimitiveComponent* OverlappedComponent, AActor* 
 }
 
 void AEnemyBase::CombatOverlapBegin(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult){
-	if (OtherActor) {
-		AMainChar* MainChar = Cast<AMainChar>(OtherActor);
-		if (MainChar) {
-			if (bCanBeDamaged) {
-				bIsAttacking = true;
-				MainChar->ReceiveDamage(Damage);
-			}		
-		}
-	}
 }
 
 void AEnemyBase::CombatOverlapEnd(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex){
-	GetWorldTimerManager().SetTimer(damageTimerHandle, this, &AEnemyBase::EndAttack, 1.f);
 }
 
 void AEnemyBase::SensorOverlapBegin(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult){
-	if (OtherActor) {
-		AMainChar* MainChar = Cast<AMainChar>(OtherActor);
-		if (MainChar) {
-			FVector MainCharPosition = MainChar->GetActorLocation();
-			ChaseEnemy(MainCharPosition);
-		}
-	}
 }
 
 void AEnemyBase::SensorOverlapEnd(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex){
-	Speed = 0.1f;
 }
 
 void AEnemyBase::CloseOverlapBegin(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult){
-	if (OtherActor) {
-		AMainChar* MainChar = Cast<AMainChar>(OtherActor);
-		if (MainChar) {
-			bOverlappingCombatSphere = true;
-			FVector MainCharPosition = MainChar->GetActorLocation();
-			ChaseEnemy(MainCharPosition);
-			ChangeStatus(EEnemyStatus::ES_Combat);
-			GetWorldTimerManager().SetTimer(resetTimerHandle, this, &AEnemyBase::DealDamage, 1.2f);
-		}
-	}
 }
 
 void AEnemyBase::CloseOverlapEnd(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex){
-	bOverlappingCombatSphere = false;
-	Speed = 0.1f;
 }
 
 void AEnemyBase::ActivateCollision() {

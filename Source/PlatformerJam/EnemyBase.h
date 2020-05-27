@@ -43,6 +43,7 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Animations)
 	class UPaperFlipbook* DeathAnimation;
 
+	//For collisions
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Combat")
 	class UBoxComponent* CombatBox;
 
@@ -52,7 +53,11 @@ public:
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "AI")
 	class USphereComponent* CloseRangeSphere;
 
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "AI")
+	class AAIController* AIController;
 
+	//Handy function to have a better order to update animations
+	void UpdateAnimation();
 
 	//Functions for gameplay (Attack, damage, death, patrol)
 	UFUNCTION(BlueprintCallable, Category = "Gameplay")
@@ -68,11 +73,23 @@ public:
 	virtual void Patrol();
 
 	UFUNCTION(BlueprintCallable, Category = "Gameplay")
+	virtual void ActionWait();
+
+	UFUNCTION(BlueprintCallable, Category = "Gameplay")
 	virtual void Death();
 
 	FTimerHandle resetTimerHandle;
 	FTimerHandle damageTimerHandle;
 	FTimerHandle attackTimer;
+
+	//Points for Patrolling, design-wise its better to modify them in the editor
+	UPROPERTY(EditAnywhere)
+	FVector StartPoint;
+
+	UPROPERTY(EditAnywhere, meta = (MakeEditWidget = "true"))
+	FVector TargetPoint;
+
+	void FlipEnemy();
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Combat")
 	TSubclassOf<UDamageType> DamageTypeClass;
@@ -93,7 +110,6 @@ public:
 
 	FORCEINLINE void ChangeStatus(EEnemyStatus Status) { CurrentStatus = Status; }
 
-	//Basic Variables; Set as private, should be used only through child class through setters-getters
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Combat")
 	float Health;
 
@@ -106,9 +122,6 @@ public:
 	float Speed;
 
 	void ResetAnimation();
-
-	FVector InitialLocation;
-	FVector MoveToLocation;
 
 	bool bIsAlive;
 	
@@ -125,11 +138,11 @@ public:
 
 	void ReceiveDamage(float value);
 
-	virtual void Tick(float DeltaSeconds) override;
-
 	void DestroyMe();
 
 	void ChaseEnemy(FVector TargetPosition);
+
+	virtual void Tick(float DeltaSeconds) override;
 
 	UFUNCTION()
 	virtual void OnOverlapBegin(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult);
