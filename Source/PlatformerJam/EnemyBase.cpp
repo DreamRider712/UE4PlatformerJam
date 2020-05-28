@@ -58,8 +58,9 @@ void AEnemyBase::BeginPlay() {
 	CloseRangeSphere->OnComponentEndOverlap.AddDynamic(this, &AEnemyBase::CloseOverlapEnd);
 
 	StartPoint = GetActorLocation();
-	FVector ForwardVector = GetActorForwardVector();
 	TargetPoint += StartPoint;
+	PointA = StartPoint;
+	PointB = TargetPoint;
 }
 
 void AEnemyBase::Tick(float DeltaSeconds) {
@@ -79,6 +80,9 @@ void AEnemyBase::UpdateAnimation() {
 	case EEnemyStatus::ES_Patrol:
 		GetSprite()->SetFlipbook(WalkAnimation);
 		break;
+	case EEnemyStatus::ES_Chase:
+		GetSprite()->SetFlipbook(WalkAnimation);
+		break;
 	case EEnemyStatus::ES_Combat:
 		break;
 	case EEnemyStatus::ES_Death:
@@ -93,7 +97,6 @@ void AEnemyBase::UpdateAnimation() {
 
 //Function used as the AI of the enemy
 void AEnemyBase::StartAI() {
-	FTimerHandle waitHandle;
 	if (Speed == 0.f) {
 		ChangeStatus(EEnemyStatus::ES_Idle);
 	}
@@ -102,10 +105,16 @@ void AEnemyBase::StartAI() {
 		{
 		case EEnemyStatus::ES_Idle:
 			//We want enemy to start in wait for some seconds, then it can start patrolling
-			GetWorldTimerManager().SetTimer(waitHandle, this, &AEnemyBase::ActionWait, 2.f);
+			ActionWait();
 			break;
 		case EEnemyStatus::ES_Patrol:
 			Patrol();
+			break;
+		case EEnemyStatus::ES_Chase:
+			ChaseEnemy();
+			break;
+		case EEnemyStatus::ES_EndChase:
+			ResetPosition();
 			break;
 		case EEnemyStatus::ES_Combat:
 			Attack();
@@ -120,7 +129,6 @@ void AEnemyBase::StartAI() {
 }
 
 void AEnemyBase::ActionWait() {
-	UE_LOG(LogTemp, Warning, TEXT("ACTION WAIT CALLING; CHANGING BACK TO PATROL"));
 	ChangeStatus(EEnemyStatus::ES_Patrol);
 	Speed = 0.1f;
 }
@@ -128,18 +136,17 @@ void AEnemyBase::ActionWait() {
 void AEnemyBase::Patrol() {
 	FVector CurrentLocation = GetActorLocation();
 	FVector ForwardVector = GetActorForwardVector();
-	FTimerHandle WaitHandle;
-	if (ForwardVector.X < 0.f && CurrentLocation.X > TargetPoint.X || ForwardVector.X > 0.f && CurrentLocation.X < TargetPoint.X) {
+	//FTimerHandle WaitHandle;
+	if (ForwardVector.X < 0.f && CurrentLocation.X > PointB.X || ForwardVector.X > 0.f && CurrentLocation.X < PointB.X) {
 		AddMovementInput(ForwardVector, Speed);
-		UE_LOG(LogTemp, Warning, TEXT("SHOULD CHANGE STATUS TO IDLE, forwardvector = %f"), ForwardVector.X);
 	}
 	else {
-		UE_LOG(LogTemp, Warning, TEXT("SHOULD CHANGE STATUS TO IDLE, forwardvector = %f"), ForwardVector.X);
-		FVector Temp = StartPoint;
-		StartPoint = TargetPoint;
-		TargetPoint = Temp;
+		FVector Temp = PointA;
+		PointA = PointB;
+		PointB = Temp;
 		Speed = 0.f;
-		GetWorldTimerManager().SetTimer(WaitHandle, this, &AEnemyBase::FlipEnemy, 2.f);
+		FlipEnemy();
+		//GetWorldTimerManager().SetTimer(WaitHandle, this, &AEnemyBase::FlipEnemy, 2.f);
 	}
 }
 
@@ -153,7 +160,44 @@ void AEnemyBase::FlipEnemy() {
 	}
 }
 
-void AEnemyBase::ChaseEnemy(FVector TargetPosition) {
+void AEnemyBase::ChaseEnemy() {
+	Speed = 0.3f;
+	FVector ForwardVector = GetActorForwardVector();
+	FVector CurrentLocation = GetActorLocation();
+
+	//Are we fasing same direction as enemy?
+	if (CurrentLocation.X <= PointB.X) {
+		SetActorRotation(FRotator(0.f, 0.f, 0.f));
+	}
+	else {
+		SetActorRotation(FRotator(0.f, 180.f, 0.f));
+	}
+	UE_LOG(LogTemp, Warning, TEXT("DISTANCE CHECK: %f"), (FVector::Dist(CurrentLocation, PointB)));
+	if (FVector::Dist(CurrentLocation, PointB) > 7.f) {
+		AddMovementInput(ForwardVector, Speed);
+	}
+	else {
+		Speed = 0.1f;
+		ChangeStatus(EEnemyStatus::ES_EndChase);
+		ResetPosition();
+	}
+}
+
+//This function is used so the enemy goes back to its original patrolling path if loses sight of enemy
+void AEnemyBase::ResetPosition() {
+	FVector ForwardVector = GetActorForwardVector();
+	FVector CurrentLocation = GetActorLocation();
+	if (FVector::Dist(CurrentLocation, StartPoint) > 1.f) {
+		PointB = StartPoint;
+		if (ForwardVector.X > 0 && CurrentLocation.X > PointB.X || ForwardVector.X < 0 && CurrentLocation.X < PointB.X) {
+			FlipEnemy();
+		}
+		AddMovementInput(ForwardVector, Speed);
+	}
+	else {
+		PointB = TargetPoint;
+		ChangeStatus(EEnemyStatus::ES_Patrol);
+	}
 }
 
 void AEnemyBase::Attack(){
@@ -217,9 +261,27 @@ void AEnemyBase::CombatOverlapEnd(UPrimitiveComponent* OverlappedComponent, AAct
 }
 
 void AEnemyBase::SensorOverlapBegin(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult){
+	// If we "detect" enemy (i.e. Player) then we'll start chasing
+	if (OtherActor) {
+		AMainChar* MainChar = Cast<AMainChar>(OtherActor);
+		if (MainChar) {
+			// First change status to Chase
+			ChangeStatus(EEnemyStatus::ES_Chase);
+			//Keep track of enemy position
+			PointB = MainChar->GetActorLocation();
+			//ChaseEnemy();
+		}
+	}
 }
 
 void AEnemyBase::SensorOverlapEnd(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex){
+	if (OtherActor) {
+		AMainChar* MainChar = Cast<AMainChar>(OtherActor);
+		if (MainChar) {
+			Speed = 0.1f;
+			ChangeStatus(EEnemyStatus::ES_EndChase);
+		}
+	}
 }
 
 void AEnemyBase::CloseOverlapBegin(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult){

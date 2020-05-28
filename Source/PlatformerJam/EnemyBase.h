@@ -13,6 +13,8 @@ UENUM(BlueprintType)
 enum class EEnemyStatus : uint8 {
 	ES_Idle		UMETA(DisplayName = "Idle"),
 	ES_Patrol	UMETA(DisplayName = "Patrolling"),
+	ES_Chase    UMETA(DisplayName = "Chase"),
+	ES_EndChase UMETA(DisplayName = "EndChase"),
 	ES_Combat	UMETA(DisplayName = "Combat"),
 	ES_Death	UMETA(DsiplayName = "Death"),
 	ES_MAX		UMETA(DisplayName = "DefaultMAX")
@@ -78,16 +80,28 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Gameplay")
 	virtual void Death();
 
+	UFUNCTION(BlueprintCallable, Category = "Gameplay")
+	virtual void ResetPosition();
+
+	void ChaseEnemy();
+
 	FTimerHandle resetTimerHandle;
 	FTimerHandle damageTimerHandle;
 	FTimerHandle attackTimer;
 
+	FTimerHandle patrollingHandle;
+
 	//Points for Patrolling, design-wise its better to modify them in the editor
+	//Storing the values of the first two points
 	UPROPERTY(EditAnywhere)
 	FVector StartPoint;
 
 	UPROPERTY(EditAnywhere, meta = (MakeEditWidget = "true"))
 	FVector TargetPoint;
+
+	//Actual patrolling points
+	FVector PointA;
+	FVector PointB;
 
 	void FlipEnemy();
 
@@ -139,8 +153,6 @@ public:
 	void ReceiveDamage(float value);
 
 	void DestroyMe();
-
-	void ChaseEnemy(FVector TargetPosition);
 
 	virtual void Tick(float DeltaSeconds) override;
 
