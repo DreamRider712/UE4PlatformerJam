@@ -63,10 +63,10 @@ public:
 
 	//Functions for gameplay (Attack, damage, death, patrol)
 	UFUNCTION(BlueprintCallable, Category = "Gameplay")
-	virtual void Attack();
+	virtual void CombatStart();
 	
 	UFUNCTION(BlueprintCallable, Category = "Gameplay")
-	virtual void DealDamage();
+	virtual void StartAttack();
 
 	UFUNCTION(BlueprintCallable, Category = "Gameplay")
 	virtual void EndAttack();
@@ -84,9 +84,13 @@ public:
 	virtual void ResetPosition();
 
 	void ChaseEnemy();
+	
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Mechanics")
+	bool bChasing;
+	bool bCloseColliderOverlap;
 
-	FTimerHandle resetTimerHandle;
-	FTimerHandle damageTimerHandle;
+	FTimerHandle resetHandle;
+	FTimerHandle endAttackTimer;
 	FTimerHandle attackTimer;
 
 	FTimerHandle patrollingHandle;
@@ -100,7 +104,11 @@ public:
 	FVector TargetPoint;
 
 	//Actual patrolling points
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Mechanics")
 	FVector PointA;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Mechanics")
 	FVector PointB;
 
 	void FlipEnemy();
@@ -134,6 +142,9 @@ public:
 	float Damage;
 
 	float Speed;
+
+	float MinAttackTime;
+	float MaxAttackTime;
 
 	void ResetAnimation();
 
