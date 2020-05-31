@@ -5,7 +5,6 @@
 #include "Blueprint/UserWidget.h"
 
 AMainCharController::AMainCharController() {
-
 }
 
 void AMainCharController::BeginPlay() {
@@ -16,5 +15,21 @@ void AMainCharController::BeginPlay() {
 	if (HUDOverlay) {
 		HUDOverlay->AddToViewport();
 		HUDOverlay->SetVisibility(ESlateVisibility::Visible);
+	}
+}
+
+void AMainCharController::EndGameScreen() {
+	if (HUDOverlay) {
+		HUDOverlay->SetVisibility(ESlateVisibility::Hidden);
+		HUDOverlay->RemoveFromParent();
+	}
+	if (EndScreenOverlayAsset) {
+		EndScreenOverlay = CreateWidget<UUserWidget>(this, EndScreenOverlayAsset);
+	}
+	if (EndScreenOverlay) {
+
+		EndScreenOverlay->AddToViewport();
+		EndScreenOverlay->SetVisibility(ESlateVisibility::Visible);
+		bShowMouseCursor = true;
 	}
 }

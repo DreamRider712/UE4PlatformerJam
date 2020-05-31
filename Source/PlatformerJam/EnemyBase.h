@@ -64,9 +64,6 @@ public:
 	//Functions for gameplay (Attack, damage, death, patrol)
 	UFUNCTION(BlueprintCallable, Category = "Gameplay")
 	virtual void CombatStart();
-	
-	UFUNCTION(BlueprintCallable, Category = "Gameplay")
-	virtual void StartAttack();
 
 	UFUNCTION(BlueprintCallable, Category = "Gameplay")
 	virtual void EndAttack();
@@ -87,17 +84,19 @@ public:
 	
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Mechanics")
 	bool bChasing;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Mechanics")
 	bool bCloseColliderOverlap;
 
 	FTimerHandle resetHandle;
 	FTimerHandle endAttackTimer;
 	FTimerHandle attackTimer;
-
+	FTimerHandle activateDamageTimer;
 	FTimerHandle patrollingHandle;
 
 	//Points for Patrolling, design-wise its better to modify them in the editor
 	//Storing the values of the first two points
-	UPROPERTY(EditAnywhere)
+	UPROPERTY(VisibleAnywhere)
 	FVector StartPoint;
 
 	UPROPERTY(EditAnywhere, meta = (MakeEditWidget = "true"))
@@ -149,9 +148,6 @@ public:
 	void ResetAnimation();
 
 	bool bIsAlive;
-	
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Mechanics")
-	bool bOverlappingCombatSphere;
 	
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Mechanics")
 	bool bIsAttacking;

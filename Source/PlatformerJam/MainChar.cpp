@@ -13,6 +13,7 @@
 #include "TimerManager.h"
 #include "EnemyBase.h"
 #include "Classes/Kismet/GameplayStatics.h"
+#include "MainCharController.h"
 
 AMainChar::AMainChar(){
 	// Make sure to only use Yaw from controller and ignore rest of rotation
@@ -54,14 +55,15 @@ AMainChar::AMainChar(){
 	HighAttackBox->SetCollisionResponseToAllChannels(ECollisionResponse::ECR_Ignore);
 	HighAttackBox->SetCollisionResponseToChannel(ECollisionChannel::ECC_Pawn, ECollisionResponse::ECR_Overlap);
 
-
 	bIsAttacking = false;
 	bCanBeDamaged = true;
 	LastAttackAnimation = AttackAnimation_2;
 	bIsAlive = true;
+	bCanAttack = true;
 
 	Health = 200.f;
 	MaxHealth = 200.f;
+	WeaponDelay = 0.65f;
 }
 
 void AMainChar::BeginPlay() {
@@ -71,6 +73,8 @@ void AMainChar::BeginPlay() {
 	LowAttackBox->OnComponentEndOverlap.AddDynamic(this, &AMainChar::CombatOverlapEnd);
 	HighAttackBox->OnComponentBeginOverlap.AddDynamic(this, &AMainChar::CombatOverlapBegin);
 	HighAttackBox->OnComponentEndOverlap.AddDynamic(this, &AMainChar::CombatOverlapEnd);
+
+	controllerRef = Cast<AMainCharController>(GetController());
 }
 
 void AMainChar::Tick(float DeltaSeconds) {
@@ -147,25 +151,33 @@ void AMainChar::UpdateAnimation() {
 
 void AMainChar::Attack() {
 	bool bIsFalling = GetMovementComponent()->IsFalling();
-	if (!bIsFalling) {
-		if (!bIsAttacking) {
+	//We have to make sure we add a delay between attacks, so players can't just hack and slash their way out
+	if (!bIsFalling && bIsAlive) {
+		if (!bIsAttacking && bCanAttack) {
 			LastAttackAnimation = LastAttackAnimation == AttackAnimation_1 ? AttackAnimation_2 : AttackAnimation_1;
 			bIsAttacking = true; 
-			if (LastAttackAnimation == AttackAnimation_1)
+			if (LastAttackAnimation == AttackAnimation_1) {
 				ActivateCollision(LowAttackBox);
-			else
+			}
+			else {
 				ActivateCollision(HighAttackBox);
-			GetWorldTimerManager().SetTimer(timerHandle, this, &AMainChar::EndAttack, .36f);
-		}																																																																																																																			
+				bCanAttack = false;
+			}
+			UE_LOG(LogTemp, Warning, TEXT("DEBUGGING FLIPBOOK LENGTHS: %f"), GetSprite()->GetFlipbookLength());
+			GetWorldTimerManager().SetTimer(timerHandle, this, &AMainChar::EndAttack, 0.36f);
+		}
 	}
 }
 
 void AMainChar::EndAttack() {
 	bIsAttacking = false;
-	if (LastAttackAnimation == AttackAnimation_1)
+	if (LastAttackAnimation == AttackAnimation_1) {
 		DeactivateCollision(LowAttackBox);
-	else
+	}
+	else {
 		DeactivateCollision(HighAttackBox);
+		GetWorldTimerManager().SetTimer(attackDelayHandle, this, &AMainChar::ResetWeaponDelay, WeaponDelay);
+	}
 }
 
 void AMainChar::ReceiveDamage(float value) {
@@ -188,6 +200,10 @@ void AMainChar::ResetDamage() {
 	bCanBeDamaged = true;
 }
 
+void AMainChar::ResetWeaponDelay(){
+	bCanAttack = true;
+}
+
 void AMainChar::Death() {
 	if (DeathAnimation) {
 		UE_LOG(LogTemp, Warning, TEXT("I DIED"));
@@ -196,6 +212,7 @@ void AMainChar::Death() {
 
 		bCanBeDamaged = false;
 		bIsAlive = false;
+		controllerRef->EndGameScreen();
 	}
 }
 

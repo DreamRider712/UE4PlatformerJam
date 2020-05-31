@@ -64,8 +64,14 @@ public:
 	float MaxStamina;
 	float Damage;
 
+	//Adding a slight delay to weapon so combat isn't linear
+	float WeaponDelay;
+
 	bool bIsAlive;
 	bool bCanBeDamaged;
+
+	UPROPERTY(VisibleAnywhere, Category = "Combat")
+	bool bCanAttack;
 
 	FORCEINLINE void SetHealth(float value) { Health = value; }
 	FORCEINLINE void SetMaxHealth(float value) { MaxHealth = value; }
@@ -74,6 +80,9 @@ public:
 	FORCEINLINE float GetMaxHealth() { return MaxHealth; }
 
 	FTimerHandle timerHandle;
+	FTimerHandle attackDelayHandle;
+
+	class AMainCharController* controllerRef;
 
 	//To keep track of which animation was used
 	class UPaperFlipbook* LastAttackAnimation;
@@ -85,6 +94,7 @@ public:
 	void UpdateAnimation();
 	void UpdateCharacter();
 	void ResetDamage();
+	void ResetWeaponDelay();
 
 	//Functions used for combat
 	void Attack();

@@ -23,6 +23,15 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "widgets")
 	UUserWidget* HUDOverlay;
 
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "widgets")
+	TSubclassOf<class UUserWidget> EndScreenOverlayAsset;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "widgets")
+	UUserWidget* EndScreenOverlay;
+
+	void EndGameScreen();
+
 protected:
 	virtual void BeginPlay() override;
+
 };
