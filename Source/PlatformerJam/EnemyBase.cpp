@@ -11,8 +11,8 @@
 #include "ConstructorHelpers.h"
 #include "GameFramework/Controller.h"
 #include "Classes/AIController.h"
-
-
+//#include "ItemBase.h"
+#include "Kismet/GameplayStatics.h"
 
 AEnemyBase::AEnemyBase() {
 	GetCapsuleComponent()->OnComponentBeginOverlap.AddDynamic(this, &AEnemyBase::OnOverlapBegin);
@@ -40,6 +40,7 @@ AEnemyBase::AEnemyBase() {
 	Speed = 0.1f;
 	MinAttackTime = 0.2f;
 	MaxAttackTime = 1.0f;
+
 }
 
 void AEnemyBase::BeginPlay() {
@@ -150,12 +151,10 @@ void AEnemyBase::Patrol() {
 	FVector CurrentLocation = GetActorLocation();
 	FVector ForwardVector = GetActorForwardVector();
 	if (ForwardVector.X < 0.f && CurrentLocation.X > PointB.X || ForwardVector.X > 0.f && CurrentLocation.X < PointB.X) {
-		UE_LOG(LogTemp, Warning, TEXT("SHOULD CARRY ON"));
 		AddMovementInput(ForwardVector, Speed);
 	}
 	else {
 		ChangeStatus(EEnemyStatus::ES_Idle);
-		UE_LOG(LogTemp, Warning, TEXT("SHOULD FLIP"));
 		FVector Temp = PointA;
 		PointA = PointB;
 		PointB = Temp;
@@ -228,7 +227,6 @@ void AEnemyBase::CombatStart() {
 		bIsAttacking = true;
 		GetSprite()->SetFlipbook(AttackAnimation);
 		float currentAnimTime = GetSprite()->GetFlipbookLength();
-		UE_LOG(LogTemp, Warning, TEXT("ATTACKING"));
 		//Should deal damage mid-way through the attack animation
 		GetWorldTimerManager().SetTimer(activateDamageTimer, this, &AEnemyBase::ActivateCollision, currentAnimTime * 3 / 4);
 		GetWorldTimerManager().SetTimer(endAttackTimer, this, &AEnemyBase::EndAttack, currentAnimTime);
@@ -244,22 +242,33 @@ void AEnemyBase::EndAttack() {
 	float attackRate = FMath::FRandRange(MinAttackTime, MaxAttackTime);
 	if (bCloseColliderOverlap && bCanBeDamaged) {
 		GetSprite()->SetFlipbook(IdleAnimation);
-		UE_LOG(LogTemp, Warning, TEXT("REPEATING ATTACK AT RATE: %f"), attackRate);
 		GetWorldTimerManager().ClearTimer(endAttackTimer);
 		GetWorldTimerManager().SetTimer(attackTimer, this, &AEnemyBase::CombatStart, attackRate);
 	}
 	else {
-		UE_LOG(LogTemp, Warning, TEXT("ENDING ATTACK"));
 	}
 }
 
 void AEnemyBase::Death(){
 	bCanBeDamaged = false;
+	FActorSpawnParameters SpawnParams;
+	UWorld* World = GetWorld();
 	if (DeathAnimation) {
 		GetSprite()->SetLooping(false);
 		GetSprite()->SetFlipbook(DeathAnimation);
 		FTimerHandle TimerHandle;
 		GetWorldTimerManager().SetTimer(TimerHandle, this, &AEnemyBase::DestroyMe, 1.f);
+		if (lootTable.Num() > 0) {
+			for (int i = 0; i < lootTable.Num(); i++) {
+				lootRng = FMath::FRandRange(0.f, 1.f);
+				if (lootRng < lootTable[i].dropRate) {
+					if (World) {
+						World->SpawnActor<AItemBase>(lootTable[i].itemLoot, GetActorLocation(), GetActorRotation(), SpawnParams);
+						break;
+					}
+				}
+			}
+		}
 		bIsAlive = false;
 	}
 }
@@ -312,7 +321,6 @@ void AEnemyBase::CombatOverlapBegin(UPrimitiveComponent* OverlappedComponent, AA
 	if (OtherActor) {
 		AMainChar* MainChar = Cast<AMainChar>(OtherActor);
 		if (MainChar) {
-			UE_LOG(LogTemp, Warning, TEXT("SHOULD DAMAGE ENEMY"));
 			MainChar->ReceiveDamage(Damage);
 		}
 	}
@@ -322,7 +330,6 @@ void AEnemyBase::CombatOverlapEnd(UPrimitiveComponent* OverlappedComponent, AAct
 	if (OtherActor) {
 		AMainChar* MainChar = Cast<AMainChar>(OtherActor);
 		if (MainChar) {
-			UE_LOG(LogTemp, Warning, TEXT("SHOULD STOP DAMAGING ENEMY"));
 		}
 	}
 }
@@ -378,7 +385,6 @@ void AEnemyBase::CloseOverlapEnd(UPrimitiveComponent* OverlappedComponent, AActo
 	if (OtherActor) {
 		AMainChar* MainChar = Cast<AMainChar>(OtherActor);
 		if (MainChar) {
-			UE_LOG(LogTemp, Warning, TEXT("SHOULD STOP COMBAT COROUTINE"));
 			bCloseColliderOverlap = false;
 			ChangeStatus(EEnemyStatus::ES_EndChase);
 			Speed = 0.1f;

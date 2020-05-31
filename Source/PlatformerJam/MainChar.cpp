@@ -64,6 +64,8 @@ AMainChar::AMainChar(){
 	Health = 200.f;
 	MaxHealth = 200.f;
 	WeaponDelay = 0.65f;
+
+	KeyCount = 0;
 }
 
 void AMainChar::BeginPlay() {
@@ -163,7 +165,6 @@ void AMainChar::Attack() {
 				ActivateCollision(HighAttackBox);
 				bCanAttack = false;
 			}
-			UE_LOG(LogTemp, Warning, TEXT("DEBUGGING FLIPBOOK LENGTHS: %f"), GetSprite()->GetFlipbookLength());
 			GetWorldTimerManager().SetTimer(timerHandle, this, &AMainChar::EndAttack, 0.36f);
 		}
 	}
@@ -206,7 +207,6 @@ void AMainChar::ResetWeaponDelay(){
 
 void AMainChar::Death() {
 	if (DeathAnimation) {
-		UE_LOG(LogTemp, Warning, TEXT("I DIED"));
 		GetSprite()->SetFlipbook(DeathAnimation);
 		GetSprite()->SetLooping(false);
 

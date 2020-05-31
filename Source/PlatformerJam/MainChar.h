@@ -75,12 +75,16 @@ public:
 
 	FORCEINLINE void SetHealth(float value) { Health = value; }
 	FORCEINLINE void SetMaxHealth(float value) { MaxHealth = value; }
+	FORCEINLINE void SetKey(int32 value) { KeyCount = value; }
 
 	FORCEINLINE float GetHealth() { return Health; }
 	FORCEINLINE float GetMaxHealth() { return MaxHealth; }
+	FORCEINLINE int32 GetKeyCount() { return KeyCount; }
 
 	FTimerHandle timerHandle;
 	FTimerHandle attackDelayHandle;
+
+	int32 KeyCount;
 
 	class AMainCharController* controllerRef;
 

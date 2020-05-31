@@ -4,11 +4,24 @@
 
 #include "CoreMinimal.h"
 #include "PaperCharacter.h"
+#include "ItemBase.h"
 #include "EnemyBase.generated.h"
 
 /**
  * 
  */
+
+USTRUCT(BlueprintType)
+struct FLootTable{
+	GENERATED_USTRUCT_BODY()
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Loot")
+	TSubclassOf<AItemBase> itemLoot;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Loot")
+	float dropRate;
+};
+
 UENUM(BlueprintType)
 enum class EEnemyStatus : uint8 {
 	ES_Idle		UMETA(DisplayName = "Idle"),
@@ -149,9 +162,14 @@ public:
 
 	bool bIsAlive;
 	
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Loot")
+	TArray<FLootTable> lootTable;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Loot")
+	float lootRng;
+	
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Mechanics")
 	bool bIsAttacking;
-
 
 	//Items related to enemy status enum
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Gameplay")

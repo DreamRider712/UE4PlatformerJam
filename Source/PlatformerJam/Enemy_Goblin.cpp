@@ -4,6 +4,7 @@
 #include "Enemy_Goblin.h"
 #include "PaperFlipbookComponent.h"
 #include "Components/CapsuleComponent.h"
+#include "ItemBase.h"
 
 AEnemy_Goblin::AEnemy_Goblin() {
 
@@ -18,7 +19,6 @@ void AEnemy_Goblin::BeginPlay() {
 
 void AEnemy_Goblin::Tick(float DeltaSeconds) {
 	Super::Tick(DeltaSeconds);
-
 }
 
 void AEnemy_Goblin::CheckStatus(EEnemyStatus Status) {
