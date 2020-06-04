@@ -109,7 +109,7 @@ public:
 
 	//Points for Patrolling, design-wise its better to modify them in the editor
 	//Storing the values of the first two points
-	UPROPERTY(VisibleAnywhere)
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
 	FVector StartPoint;
 
 	UPROPERTY(EditAnywhere, meta = (MakeEditWidget = "true"))
@@ -160,6 +160,7 @@ public:
 
 	void ResetAnimation();
 
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Mechanics")
 	bool bIsAlive;
 	
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Loot")

@@ -79,6 +79,8 @@ public:
 
 	FORCEINLINE float GetHealth() { return Health; }
 	FORCEINLINE float GetMaxHealth() { return MaxHealth; }
+
+	UFUNCTION(BlueprintCallable)
 	FORCEINLINE int32 GetKeyCount() { return KeyCount; }
 
 	FTimerHandle timerHandle;

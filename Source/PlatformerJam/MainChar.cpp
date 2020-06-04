@@ -104,7 +104,7 @@ void AMainChar::SetupPlayerInputComponent(class UInputComponent* PlayerInputComp
 
 void AMainChar::MoveRight(float value) {
 	if (!bIsAttacking && bIsAlive && bCanBeDamaged) {
-		AddMovementInput(FVector(1.f, 0.f, 0.f), value);
+		AddMovementInput(FVector(1.f, 0.f, 0.f), value*.4f);
 	}
 }
 
