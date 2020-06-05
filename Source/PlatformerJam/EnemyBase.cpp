@@ -11,8 +11,8 @@
 #include "ConstructorHelpers.h"
 #include "GameFramework/Controller.h"
 #include "Classes/AIController.h"
-//#include "ItemBase.h"
 #include "Kismet/GameplayStatics.h"
+#include "Components/InterpToMovementComponent.h"
 
 AEnemyBase::AEnemyBase() {
 	GetCapsuleComponent()->OnComponentBeginOverlap.AddDynamic(this, &AEnemyBase::OnOverlapBegin);
@@ -30,6 +30,10 @@ AEnemyBase::AEnemyBase() {
 	
 	CloseRangeSphere = CreateDefaultSubobject<USphereComponent>(TEXT("CloseRangeSphere"));
 	CloseRangeSphere->SetupAttachment(GetRootComponent());
+
+	interpComponent = CreateDefaultSubobject<UInterpToMovementComponent>(TEXT("InterpToMovement"));
+	interpComponent->BehaviourType = EInterpToBehaviourType::PingPong;
+	interpComponent->Duration = 3.f;
 
 	bIsAlive = true;
 	bIsAttacking = false;
@@ -57,12 +61,13 @@ void AEnemyBase::BeginPlay() {
 	CloseRangeSphere->OnComponentBeginOverlap.AddDynamic(this, &AEnemyBase::CloseOverlapBegin);
 	CloseRangeSphere->OnComponentEndOverlap.AddDynamic(this, &AEnemyBase::CloseOverlapEnd);
 	
-	StartPoint = GetActorLocation();
-	TargetPoint += GetActorLocation();
-	
 	PointA = StartPoint;
 	PointB = TargetPoint;
 	
+	interpComponent->AddControlPointPosition(PointA, true);
+	interpComponent->AddControlPointPosition(PointB, true);
+	interpComponent->FinaliseControlPoints();
+
 }
 
 void AEnemyBase::Tick(float DeltaSeconds) {
@@ -148,20 +153,8 @@ void AEnemyBase::ActionWait() {
 }
 
 void AEnemyBase::Patrol() {
-	FVector CurrentLocation = GetActorLocation();
-	FVector ForwardVector = GetActorForwardVector();
-	if (ForwardVector.X < 0.f && CurrentLocation.X > PointB.X || ForwardVector.X > 0.f && CurrentLocation.X < PointB.X) {
-		AddMovementInput(ForwardVector, Speed);
-	}
-	else {
-		ChangeStatus(EEnemyStatus::ES_Idle);
-		FVector Temp = PointA;
-		PointA = PointB;
-		PointB = Temp;
-		Speed = 0.f;
-		FlipEnemy();
-		//GetWorldTimerManager().SetTimer(WaitHandle, this, &AEnemyBase::FlipEnemy, 2.f);
-	}
+	//Add(&AEnemyBase::FlipEnemy);
+	//(FOnInterpToReverseDelegate, const FHitResult&, ImpactResult, float, Time)
 }
 
 void AEnemyBase::FlipEnemy() {
@@ -253,6 +246,7 @@ void AEnemyBase::Death(){
 	bCanBeDamaged = false;
 	FActorSpawnParameters SpawnParams;
 	UWorld* World = GetWorld();
+	interpComponent->StopMovementImmediately();
 	if (DeathAnimation) {
 		GetSprite()->SetLooping(false);
 		GetSprite()->SetFlipbook(DeathAnimation);
@@ -344,9 +338,17 @@ void AEnemyBase::SensorOverlapBegin(UPrimitiveComponent* OverlappedComponent, AA
 			if (GetWorldTimerManager().IsTimerActive(resetHandle)) {
 				GetWorldTimerManager().ClearTimer(resetHandle);
 			}
-			ChangeStatus(EEnemyStatus::ES_Chase);
 			//Keep track of enemy position
 			PointB = MainChar->GetActorLocation();
+			PointA = GetActorLocation();
+			interpComponent->StopMovementImmediately();
+			interpComponent->ResetControlPoints();
+			interpComponent->AddControlPointPosition(PointA, true);
+			interpComponent->AddControlPointPosition(PointB, true);
+			//interpComponent->FinaliseControlPoints();
+			//interpComponent->RestartMovement();
+
+			ChangeStatus(EEnemyStatus::ES_Chase);
 			//ChaseEnemy();
 		}
 	}
@@ -358,7 +360,6 @@ void AEnemyBase::SensorOverlapEnd(UPrimitiveComponent* OverlappedComponent, AAct
 		if (MainChar) {
 			Speed = 0.1f;
 			ChangeStatus(EEnemyStatus::ES_EndChase);
-			PointB = TargetPoint;
 		}
 	}
 }

@@ -71,6 +71,9 @@ public:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "AI")
 	class AAIController* AIController;
 
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "AI")
+	class UInterpToMovementComponent* interpComponent;
+
 	//Handy function to have a better order to update animations
 	void UpdateAnimation();
 
@@ -109,12 +112,13 @@ public:
 
 	//Points for Patrolling, design-wise its better to modify them in the editor
 	//Storing the values of the first two points
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, meta = (MakeEditWidget = "true"))
 	FVector StartPoint;
 
 	UPROPERTY(EditAnywhere, meta = (MakeEditWidget = "true"))
 	FVector TargetPoint;
 
+	FVector InitialLoc;
 	//Actual patrolling points
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Mechanics")

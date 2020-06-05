@@ -14,7 +14,6 @@ void AEnemy_Goblin::BeginPlay() {
 	Super::BeginPlay();
 
 	ChangeStatus(CurrentStatus);
-	UE_LOG(LogTemp, Warning, TEXT("INIAIL Health: %f"), Health);
 }
 
 void AEnemy_Goblin::Tick(float DeltaSeconds) {
